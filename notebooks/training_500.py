@@ -41,7 +41,7 @@ __MERGE_LABELS__ = OrderedDict(zip(__MERGE_KEYS__,range(3)))
 # In[21]:
 
 
-def _downsample(genes_histogram, genes_to_keep=5000):
+def _downsample(genes_histogram, genes_to_keep=500):
     """Downsample a histogram by randomly dropping proportional
     number of genes in each bin
 
@@ -74,7 +74,7 @@ def _downsample(genes_histogram, genes_to_keep=5000):
     return downsampled_dict
 
 
-def load_data(gene_cds, gene_lengths, genes_to_keep=5000):
+def load_data(gene_cds, gene_lengths, genes_to_keep=500):
     """Load dataset
 
     Params
@@ -115,7 +115,7 @@ def load_data(gene_cds, gene_lengths, genes_to_keep=5000):
         length_wise_binned_genes[b - 1].append(valid_genes_keys[i])
 
     downsampled_genes_dict = _downsample(length_wise_binned_genes,
-                                         genes_to_keep=5000)
+                                         genes_to_keep=genes_to_keep)
     return downsampled_genes_dict, gene_seq
 
 
@@ -218,7 +218,7 @@ def train(X_train, Y_train, X_test, Y_test):
             acc_train+=acc[1]
             if (index%500) == 0:
                 sys.stderr.write('Epoch: {} || Index :{} || loss: {} || acc: {}\n'.format(e, index, acc[0], acc[1]))
-                with open('train_acc.log', 'a') as f:
+                with open('train_acc_500.log', 'a') as f:
                     f.write('Epoch: {} || Index :{} || loss: {} || acc: {}\n'.format(e, index, acc[0], acc[1]))
                 ##for x_test, y_test in zip(X_test, Y_test):
                 ##    prediction = model.evaluate(np.array([x_test]),np.array([y_test]), batch_size=1)
@@ -226,7 +226,7 @@ def train(X_train, Y_train, X_test, Y_test):
             index += 1
         acc_train /= len(X_train)
         sys.stderr.write('Epoch: {} || Train acc: {}\n'.format(e, acc_train))
-        with open('train_acc.log', 'a') as f:
+        with open('train_acc_500.log', 'a') as f:
             f.write('Epoch: {} || Train acc: {}\n'.format(e, acc_train))
         acc_test = 0
         for x_test, y_test in zip(X_test, Y_test):
@@ -236,10 +236,10 @@ def train(X_train, Y_train, X_test, Y_test):
         acc_test /= len(X_test)
         test_history[e].append(acc_test)
         sys.stdout.write('Epoch: {} || Test acc: {}\n'.format(e, acc_test))
-        with open('test_acc.log', 'a') as f:
+        with open('test_acc_500.log', 'a') as f:
             f.write('Epoch: {} || Test acc: {}\n'.format(e, acc_test))
 
-        model.save('lstm-dropout_025_recur_dropout_025-epoch-{}.h5'.format(e))
+        model.save('lstm-dropout_025_recur_dropout_025-epoch-{}_500.h5'.format(e))
 
     return model, train_history
 
@@ -254,7 +254,7 @@ gene_lengths = '../data/hg38/input/genes_lengths.json'
 # In[22]:
 
 
-genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=5000)
+genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=500)
 
 
 # In[29]:
@@ -288,12 +288,12 @@ for gene in test_genes:
 
 
 model, trainhist = train(X_train, Y_train, X_test, Y_test)
-model.save('lstm-dropout_025_recur_dropout_025-all.h5')
+model.save('lstm-dropout_025_recur_dropout_025-all_500.h5')
 
 
 # In[ ]:
 
 
-with open('train_hist_025_recur_dropout_025.pickle', 'wb') as f:
+with open('train_hist_025_recur_dropout_025_500.pickle', 'wb') as f:
     pickle.dump(trainhist, f)
 
