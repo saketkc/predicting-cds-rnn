@@ -8,13 +8,13 @@ import importlib
 import os
 import json
 import pickle
+import re
 import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
 
-from keras_tqdm import TQDMNotebookCallback
 from keras.models import load_model
 from keras.utils import to_categorical
 from keras import backend as K
@@ -190,8 +190,7 @@ def one_hot_encoding(data_dict):
 
 # In[49]:
 
-
-def train(X_train, Y_train, X_test, Y_test):
+def create_model():
     model = Sequential()
     model.add(
         LSTM(
@@ -205,11 +204,21 @@ def train(X_train, Y_train, X_test, Y_test):
         loss='categorical_crossentropy',
         optimizer='rmsprop',
         metrics=['accuracy'])
+    return model
+
+def load_trained_model(weights_path=None):
+    model = create_model()
+    if weights_path:
+        model.load_weights(weights_path)
+    return model
+
+def train(X_train, Y_train, X_test, Y_test, weights_path=None, start_epoch=0):
+    model = load_trained_model(weights_path)
     nb_epoch = 128
     train_history = defaultdict(list)
     test_history = defaultdict(list)
 
-    for e in range(nb_epoch):
+    for e in range(start_epoch, nb_epoch):
         index = 0
         acc_train = 0
         for x, y in zip(X_train, Y_train):
@@ -247,53 +256,51 @@ def train(X_train, Y_train, X_test, Y_test):
 # In[11]:
 
 
-gene_cds = '../data/hg38/input/genes_cds.json'
-gene_lengths = '../data/hg38/input/genes_lengths.json'
+
+if __name__ == '__main__':
+    args = len(sys.argv)
+    if args ==2 :
+        weights_file = sys.argv[1]
+        last_epoch = int(re.search('epoch-\d+', weights_file).group(0).split('-')[1])
+        print ('Last epochs :{}'.format(last_epoch))
+    else:
+        weights_file = None
+        last_epoch = 0
+
+    gene_cds = '../data/hg38/input/genes_cds.json'
+    gene_lengths = '../data/hg38/input/genes_lengths.json'
+
+    genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=500)
 
 
-# In[22]:
+    training_genes, test_genes = split_train_test_genes(genes_dict, train_proportion=0.7)
+
+    ## Shuffle the genes once again to avoid any bin wise correlation
+
+    np.random.shuffle(training_genes)
+    np.random.shuffle(test_genes)
+
+    X_train = []
+    Y_train = []
+
+    X_test = []
+    Y_test = []
+
+    for gene in training_genes:
+        X, Y = one_hot_encoding(gene_seq[gene])
+        X_train.append(X)
+        Y_train.append(Y)
+
+    for gene in test_genes:
+        X, Y = one_hot_encoding(gene_seq[gene])
+        X_test.append(X)
+        Y_test.append(Y)
 
 
-genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=500)
+    model, trainhist = train(X_train, Y_train, X_test, Y_test, weights_file, last_epoch)
+    model.save('lstm-dropout_025_recur_dropout_025-all_500.h5')
 
 
-# In[29]:
-
-
-training_genes, test_genes = split_train_test_genes(genes_dict, train_proportion=0.7)
-
-## Shuffle the genes once again to avoid any bin wise correlation
-
-np.random.shuffle(training_genes)
-np.random.shuffle(test_genes)
-
-X_train = []
-Y_train = []
-
-X_test = []
-Y_test = []
-
-for gene in training_genes:
-    X, Y = one_hot_encoding(gene_seq[gene])
-    X_train.append(X)
-    Y_train.append(Y)
-
-for gene in test_genes:
-    X, Y = one_hot_encoding(gene_seq[gene])
-    X_test.append(X)
-    Y_test.append(Y)
-
-
-# In[ ]:
-
-
-model, trainhist = train(X_train, Y_train, X_test, Y_test)
-model.save('lstm-dropout_025_recur_dropout_025-all_500.h5')
-
-
-# In[ ]:
-
-
-with open('train_hist_025_recur_dropout_025_500.pickle', 'wb') as f:
-    pickle.dump(trainhist, f)
+    with open('train_hist_025_recur_dropout_025_500.pickle', 'wb') as f:
+        pickle.dump(trainhist, f)
 
