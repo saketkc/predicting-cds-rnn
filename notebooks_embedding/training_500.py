@@ -19,7 +19,7 @@ from keras.models import load_model
 from keras.utils import to_categorical
 from keras import backend as K
 from keras.models import Sequential
-from keras.layers import Dense, Activation, LSTM
+from keras.layers import Dense, Activation, LSTM, Embedding
 #Dropout, RepeatVector, TimeDistributed, AveragePooling1D, Flatten
 from collections import defaultdict, OrderedDict
 from scipy.stats import describe
@@ -33,13 +33,13 @@ def set_keras_backend(backend):
 
 #set_keras_backend('theano')
 __BASES__ = ['A','C','G','T']
-__BASES_MAP__ = OrderedDict(zip(__BASES__,range(1, 5)))
+__BASES_MAP__ = OrderedDict(zip(__BASES__,range(4)))
 __MERGE_KEYS__ = ['UTR5', 'CDS', 'UTR3']
 __MERGE_LABELS__ = OrderedDict(zip(__MERGE_KEYS__, range(3)))
 
 
 # In[21]:
-def _downsample(genes_histogram, genes_to_keep=500):
+def _downsample(genes_histogram, genes_to_keep=19000):
     """Downsample a histogram by randomly dropping proportional
     number of genes in each bin
 
@@ -72,7 +72,7 @@ def _downsample(genes_histogram, genes_to_keep=500):
     return downsampled_dict
 
 
-def load_data(gene_cds, gene_lengths, genes_to_keep=500):
+def load_data(gene_cds, gene_lengths, genes_to_keep=19000):
     """Load dataset
 
     Params
@@ -189,13 +189,13 @@ def one_hot_encoding(data_dict):
 
 def create_model():
     model = Sequential()
-    model.add(iEmbedding(input_dim=4, output_dim=4))
+    model.add(Embedding(input_dim=4, output_dim=4))
     model.add(
         LSTM(
-            128,
+            3,
             return_sequences=True,
             input_shape=(None, 4),
-            dropout=0.25,
+            dropout=0.5,
             recurrent_dropout=0.25))
     model.add(Dense(3, activation='sigmoid'))
     model.compile(
@@ -220,12 +220,12 @@ def train(X_train, Y_train, X_test, Y_test, weights_path=None, start_epoch=0):
         index = 0
         acc_train = 0
         for x, y in zip(X_train, Y_train):
-            acc = model.train_on_batch(np.array([x]), np.array([y]))
+            acc = model.train_on_batch(np.array([x]), np.array([y]))#, verbose=0)
             train_history[e].append(acc)
             acc_train+=acc[1]
-            if (index%500) == 0:
+            if (index%19000) == 0:
                 sys.stderr.write('Epoch: {} || Index :{} || loss: {} || acc: {}\n'.format(e, index, acc[0], acc[1]))
-                with open('train_acc_500.log', 'a') as f:
+                with open('train_acc_19000.log', 'a') as f:
                     f.write('Epoch: {} || Index :{} || loss: {} || acc: {}\n'.format(e, index, acc[0], acc[1]))
                 ##for x_test, y_test in zip(X_test, Y_test):
                 ##    prediction = model.evaluate(np.array([x_test]),np.array([y_test]), batch_size=1)
@@ -233,7 +233,7 @@ def train(X_train, Y_train, X_test, Y_test, weights_path=None, start_epoch=0):
             index += 1
         acc_train /= len(X_train)
         sys.stderr.write('Epoch: {} || Train acc: {}\n'.format(e, acc_train))
-        with open('train_acc_500.log', 'a') as f:
+        with open('train_acc_19000.log', 'a') as f:
             f.write('Epoch: {} || Train acc: {}\n'.format(e, acc_train))
         acc_test = 0
         for x_test, y_test in zip(X_test, Y_test):
@@ -243,10 +243,10 @@ def train(X_train, Y_train, X_test, Y_test, weights_path=None, start_epoch=0):
         acc_test /= len(X_test)
         test_history[e].append(acc_test)
         sys.stdout.write('Epoch: {} || Test acc: {}\n'.format(e, acc_test))
-        with open('test_acc_500.log', 'a') as f:
+        with open('test_acc_19000.log', 'a') as f:
             f.write('Epoch: {} || Test acc: {}\n'.format(e, acc_test))
 
-        model.save('lstm-dropout_025_recur_dropout_025-epoch-{}_500.h5'.format(e))
+        model.save('lstm-dropout_025_recur_dropout_025-epoch-{}_19000.h5'.format(e))
 
     return model, train_history
 
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     gene_cds = '../data/hg38/input/genes_cds.json'
     gene_lengths = '../data/hg38/input/genes_lengths.json'
 
-    genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=500)
+    genes_dict, gene_seq = load_data(gene_cds, gene_lengths, genes_to_keep=19000)
 
     training_genes, test_genes = split_train_test_genes(genes_dict, train_proportion=0.7)
 
@@ -295,9 +295,9 @@ if __name__ == '__main__':
 
 
     model, trainhist = train(X_train, Y_train, X_test, Y_test, weights_file, last_epoch)
-    model.save('lstm-dropout_025_recur_dropout_025-all_500.h5')
+    model.save('lstm-dropout_025_recur_dropout_025-all_19000.h5')
 
 
-    with open('train_hist_025_recur_dropout_025_500.pickle', 'wb') as f:
+    with open('train_hist_025_recur_dropout_025_19000.pickle', 'wb') as f:
         pickle.dump(trainhist, f)
 
