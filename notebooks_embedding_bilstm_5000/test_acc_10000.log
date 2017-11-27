@@ -1,0 +1,11 @@
+Epoch: 0 || Test acc: 0.5513286930970391
+Epoch: 1 || Test acc: 0.6392864908355295
+Epoch: 2 || Test acc: 0.6450926719098976
+Epoch: 3 || Test acc: 0.6678209712875665
+Epoch: 4 || Test acc: 0.7316017254733607
+Epoch: 5 || Test acc: 0.7375817155322394
+Epoch: 6 || Test acc: 0.7571619252838742
+Epoch: 7 || Test acc: 0.7659016347923547
+Epoch: 8 || Test acc: 0.7619924680721653
+Epoch: 9 || Test acc: 0.7667343733856398
+Epoch: 10 || Test acc: 0.7636782916075057
