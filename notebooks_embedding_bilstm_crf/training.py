@@ -25,6 +25,9 @@ from keras_contrib.layers import CRF
 #Dropout, RepeatVector, TimeDistributed, AveragePooling1D, Flatten
 from collections import defaultdict, OrderedDict
 from scipy.stats import describe
+
+from ChainCRF import ChainCRF
+
 print(K.backend())
 def set_keras_backend(backend):
     if K.backend() != backend:
@@ -192,18 +195,20 @@ def one_hot_encoding(data_dict):
 def create_model():
     model = Sequential()
     model.add(Embedding(input_dim=4, output_dim=4))
-    #model.add(Bidirectional(LSTM(
-    #            3,
-    #            return_sequences=True,
-    #            input_shape=(None, 4),
-    #            dropout=0.5,
-    #            recurrent_dropout=0.25)))
-    crf = CRF(3, activation='sigmoid')#, input_shape=(None,3))
+    model.add(Bidirectional(LSTM(
+                50,
+                return_sequences=True,
+                input_shape=(None, 4),
+                dropout=0.5,
+                recurrent_dropout=0.25)))
+    #crf = CRF(3, activation='sigmoid')#, input_shape=(None,3))
+
+    crf = ChainCRF()#, input_shape=(None,3))
     model.add(crf)#, activation='sigmoid')
-    model.add(Dense(3, activation='sigmoid'))
+    #model.add(Dense(4, activation='sigmoid'))
     print(model.summary())
     model.compile(
-        loss='categorical_crossentropy',
+        loss=crf.loss,#'categorical_crossentropy',
         optimizer='rmsprop',
         metrics=['accuracy'])
     return model
@@ -224,11 +229,13 @@ def train(X_train, Y_train, X_test, Y_test, weights_path=None, start_epoch=0):
         index = 0
         acc_train = 0
         for x, y in zip(X_train, Y_train):
-            acc = model.fit(np.array([x]), np.array([y]))#, verbose=0)
+            acc = model.train_on_batch(np.array([x]), np.array([y]))#, verbose=0)
+            #.fit(np.array([x]), np.array([y]))#, verbose=0)
+            #acc = history.history
+            print(acc)
 
-            #train_on_batch(np.array([x]), np.array([y]))#, verbose=0)
             train_history[e].append(acc)
-            acc_train+=acc[1]
+            acc_train+=acc[1]#.get('acc')
             if (index%19000) == 0:
                 sys.stderr.write('Epoch: {} || Index :{} || loss: {} || acc: {}\n'.format(e, index, acc[0], acc[1]))
                 with open('train_acc_19000.log', 'a') as f:

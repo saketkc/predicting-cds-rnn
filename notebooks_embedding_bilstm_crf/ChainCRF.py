@@ -8,35 +8,35 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from keras import backend as K
-from keras import initializations, regularizers, constraints
+from keras import initializers, regularizers, constraints
 from keras.engine import Layer, InputSpec
 
 if K._BACKEND == 'tensorflow':
     import tensorflow as tf
-    
+
     def logsumexp(x, axis=None):
         '''Returns `log(sum(exp(x), axis=axis))` with improved numerical stability.
         '''
         return tf.reduce_logsumexp(x, axis=[axis])
-    
-    
+
+
     def batch_gather(reference, indices):
         '''Batchwise gathering of row indices.
-    
+
         The numpy equivalent is reference[np.arange(batch_size), indices].
-    
+
         # Arguments
             reference: tensor with ndim >= 2 of shape
               (batch_size, dim1, dim2, ..., dimN)
             indices: 1d integer tensor of shape (batch_size) satisfiying
               0 <= i < dim2 for each element i.
-    
+
         # Returns
             A tensor with shape (batch_size, dim2, ..., dimN)
             equal to reference[1:batch_size, indices]
         '''
         batch_size = K.shape(reference)[0]
-        indices = tf.pack([tf.range(batch_size), indices], axis=1)
+        indices = tf.stack([tf.range(batch_size), indices], axis=1)
         return tf.gather_nd(reference, indices)
 else:
     import theano.tensor as T
@@ -46,19 +46,19 @@ else:
         xmax = K.max(x, axis=axis, keepdims=True)
         xmax_ = K.max(x, axis=axis)
         return xmax_ + K.log(K.sum(K.exp(x - xmax), axis=axis))
-    
-    
+
+
     def batch_gather(reference, indices):
         '''Batchwise gathering of row indices.
-    
+
         The numpy equivalent is reference[np.arange(batch_size), indices],
-    
+
         # Arguments
             reference: tensor with ndim >= 2 of shape
               (batch_size, dim1, dim2, ..., dimN)
             indices: 1d integer tensor of shape (batch_size) satisfiying
               0 <= i < dim2 for each element i.
-    
+
         # Returns
             A tensor with shape (batch_size, dim2, ..., dimN)
             equal to reference[1:batch_size, indices]
@@ -239,7 +239,7 @@ class ChainCRF(Layer):
     # Arguments
         init: weight initialization function for chain energies U.
             Can be the name of an existing function (str),
-            or a Theano function (see: [initializations](../initializations.md)).
+            or a Theano function (see: [initializers](../initializers.md)).
         U_regularizer: instance of [WeightRegularizer](../regularizers.md)
             (eg. L1 or L2 regularization), applied to the transition weight matrix.
         b_start_regularizer: instance of [WeightRegularizer](../regularizers.md),
@@ -295,7 +295,7 @@ class ChainCRF(Layer):
         self.supports_masking = True
         self.uses_learning_phase = True
         self.input_spec = [InputSpec(ndim=3)]
-        self.init = initializations.get(init)
+        self.init = initializers.get(init)
 
         self.U_regularizer = regularizers.get(U_regularizer)
         self.b_start_regularizer = regularizers.get(b_start_regularizer)
@@ -430,9 +430,9 @@ if __name__ == '__main__':
     y = np.random.randint(n_classes, size=(batch_size, maxlen))
     y = np.eye(n_classes)[y]
     model.train_on_batch(x, y)
-    
-    
-    
+
+
+
     print(x)
     print(y)
-    
+
